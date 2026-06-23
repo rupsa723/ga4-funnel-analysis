@@ -14,7 +14,7 @@ End-to-end analysis of 3 months of real GA4 ecommerce data (Google Merchandise S
 
 <!-- Replace the line below with your screenshot once exported.
      In GitHub: drag a PNG into the repo (e.g. /assets/dashboard.png) then reference it here. -->
-![Power BI Dashboard](assets/dashboard.png)
+![Power BI Dashboard](assets/dashboard-1.png)
 
 > *3-page Power BI dashboard built directly on raw CSVs with DAX — funnel, channel quality, and product seasonality.*
 
