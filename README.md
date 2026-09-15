@@ -1,63 +1,104 @@
 # GA4 Digital Marketing Funnel Analysis
 
 **Where is the funnel leaking, and which channels actually drive revenue?**
-End-to-end analysis of 3 months of real GA4 ecommerce data (Google Merchandise Store) — from BigQuery extraction to an interactive Power BI dashboard and an A/B test recommendation.
+End-to-end analysis of three months of real GA4 ecommerce data (Google
+Merchandise Store) — from a 4.3 million-row BigQuery export to a four-page
+Power BI dashboard.
 
 ![SQL](https://img.shields.io/badge/SQL-BigQuery-4285F4?style=flat&logo=google-cloud&logoColor=white)
-![Python](https://img.shields.io/badge/Python-pandas-3776AB?style=flat&logo=python&logoColor=white)
 ![PowerBI](https://img.shields.io/badge/Power%20BI-DAX-F2C811?style=flat&logo=powerbi&logoColor=black)
+![Events](https://img.shields.io/badge/Events-4.3M-2D4A6B?style=flat)
 ![Status](https://img.shields.io/badge/Status-Completed-2A9D8F?style=flat)
 
 ---
 
 ## 🖥️ Dashboard Preview
 
-<!-- Replace the line below with your screenshot once exported.
-     In GitHub: drag a PNG into the repo (e.g. /assets/dashboard.png) then reference it here. -->
-![Power BI Dashboard](assets/Dashboard-1.png)
+![Power BI Dashboard](assets/dashboard-1.png)
 
-> *3-page Power BI dashboard built directly on raw CSVs with DAX — funnel, channel quality, and product seasonality.*
+> *Four pages, 44 DAX measures — funnel diagnosis, channel quality, visitor
+> behaviour, product mix.*
 
 ---
 
-## 🎯 Headline Insights
+## 🎯 The Problem
 
-- **Only 0.7% of sessions convert** — the funnel loses 83% of users at the very first step (Session Start → View Item).
-- **Referral traffic is the hidden winner:** **$21.90 revenue/session — 14x better than Google Paid** ($1.54), which generated just $40 in 3 months.
-- **8x traffic growth, but revenue/session fell 66%** — more visitors did *not* mean more money. A quality problem, not a volume problem.
-- **Returning users convert 2x higher** and drive 2.7x more revenue/session — yet 81% of traffic is first-timers. Retention is underinvested.
-- **47% of revenue rides on Apparel**, which fell 60% post-holiday — a concentrated seasonal risk.
+The Google Merchandise Store recorded 360,129 sessions over three months and
+4,848 orders, a conversion rate of 1.35%.
+
+The analysis locates where sessions stop, tests whether device, country, channel
+or visit history explains it, and estimates how many orders each funnel step
+would gain from a one-point improvement.
+
+---
+
+## 💡 Headline Insights
+
+- **Two thirds of the loss happens before anyone sees a product.** 277,837
+  sessions end without a product view. Checkout isn't the problem — 43.7% of
+  sessions that start it finish it.
+- **Buying here takes two visits.** Only 2,848 of 4,848 orders complete in one
+  session, so single-visit conversion is 0.79% against 1.35% overall.
+- **The biggest drop-off isn't the most valuable fix.** A point of improvement at
+  Add to Cart returns **246 orders**, against 223 at View Item — which loses four
+  times as many sessions.
+- **A third of revenue is credited to a channel that isn't one.** The top revenue
+  line is **92% the store's own hostnames** referring to each other. $116,247
+  with no traceable source.
+- **Repeat visitors are the business.** 17.5% of users return, and carry **82.2%
+  of revenue**.
+
+Plus three defects the analysis caught: revenue stops recording on 26 January,
+bounce changes definition mid-window, and the product category field isn't stable
+per product.
+
+---
+
+## 🧪 Methodology
+
+**Validate first** — the session table is confirmed one row per session before any
+rate is computed, and revenue reconciles along two independent paths to within $55.
+
+**Test every explanation, including the ones that fail** — device, country,
+channel and visit history each tested against bounce, conversion and order value.
+Device explains nothing; channel explains engagement and exactly one funnel step.
+
+**Re-test under a different definition** — bounce computed three ways. The device
+result held; the monthly series didn't, which is how the January tracking break
+surfaced.
 
 ---
 
 ## 🧰 What This Demonstrates
 
-**SQL (BigQuery)** — CTEs, window functions (`LAG`, `FIRST_VALUE`, `RANK`, `PARTITION BY`), multi-table joins, conditional aggregation
-**Python (pandas)** — channel-label engineering and a reproducible CSV pipeline from raw event data
-**Power BI / DAX** — `CALCULATE`+`FILTER`, `ADDCOLUMNS`, `DISTINCTCOUNT`, calculated columns, 3-page storytelling layout
-**Analytics judgment** — funnel diagnosis, channel attribution, cohort segmentation, and honest data-limitation documentation
+**SQL (BigQuery)** — `UNNEST` on nested event parameters and item arrays, `ARRAY_AGG` for session attribution, window functions with `QUALIFY`, persistent UDFs, conditional aggregation across 17 event types
+
+**Power BI / DAX** — star schema with disconnected tables, `SWITCH` over `SELECTEDVALUE`, `CALCULATE` with `ALL` and `ALLSELECTED` for share denominators, 44 measures
+
+**Analytics judgment** — ranking leaks by expected orders rather than size, attribution forensics on a channel that looked like a win, and documenting data defects rather than smoothing them over
 
 ---
 
 ## 🔧 Pipeline
 
 ```
-BigQuery (extract) → Python (clean & merge) → BigQuery SQL (analysis) → Power BI (dashboard) → Presentation + A/B brief
+BigQuery (query in place) → SQL table builds → 13 analysis files → Power BI → dashboard + deck
 ```
 
-**Data:** `bigquery-public-data.ga4_obfuscated_sample_ecommerce` · Nov 2020 – Jan 2021 (92 days)
-**Outputs:** `master_events.csv` (52,939 rows), `items_clean.csv` (16,003 rows), 10 SQL files, `.pbix` dashboard, 12-slide deck
+**Data:** `bigquery-public-data.ga4_obfuscated_sample_ecommerce` · Nov 2020 – Jan 2021 (92 days) · 4,295,584 events
+**Outputs:** `sessions` (360,129 rows), `items` (16,003 rows), 15 SQL files, `.pbix`, 12-slide deck
 
-> **Note:** GA4 `session_start` events carry no channel data, so attribution is rebuilt from `begin_checkout` and `purchase` events. This (and other limitations) are documented in [the full project notes](#-more-detail).
+> **Note:** GA4 `session_start` events carry no source parameter, so channel is
+> rebuilt from the first non-null source across each session. This and other
+> limitations are documented in [the SQL notes](sql/README.md).
 
 ---
 
 ## 📂 More Detail
 
-- **SQL queries:** [`/sql`](sql/) — 10 files, from funnel drop-off to product-channel joins
-- **Data prep:** [`data_preparation.py`](data_preparation.py)
-- **Dashboard:** [`ga4 dashboard.pbix`](ga4%20dashboard.pbix) · [PDF export](ga4%20dashboard.pdf)
-- **Presentation:** [`GA4_Funnel_Analysis.pptx`](GA4_Funnel_Analysis.pptx)
+- **SQL:** [`/sql`](sql/) — two table builds and thirteen analysis files, each carrying its results and what they mean
+- **Dashboard:** [`.pbix`](dashboard/ga4_funnel_analysis.pbix) · [PDF export](dashboard/ga4_funnel_analysis.pdf)
+- **Presentation:** [`GA4_Funnel_Analysis.pptx`](presentation/GA4_Funnel_Analysis.pptx)
 
 ---
 
